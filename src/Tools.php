@@ -16,6 +16,8 @@ namespace NFePHP\NFe;
  * @link      http://github.com/nfephp-org/sped-nfe for the canonical source repository
  */
 
+
+ //teste
 use NFePHP\Common\Strings;
 use NFePHP\Common\Signer;
 use NFePHP\Common\UFList;

@@ -525,7 +525,7 @@ class Tools extends ToolsCommon
      * @return string
      */
     public function sefazManifesta(
-        $chNFe,
+        $chNFe = [],
         $tpEvento,
         $xJust = '',
         $nSeqEvento = 1
@@ -535,7 +535,7 @@ class Tools extends ToolsCommon
             $xJust = Strings::replaceSpecialsChars(substr(trim($xJust), 0, 255));
             $tagAdic = "<xJust>$xJust</xJust>";
         }
-        return $this->sefazEvento(
+        return $this->sefazEventoLote(
             'AN',
             $chNFe,
             $tpEvento,

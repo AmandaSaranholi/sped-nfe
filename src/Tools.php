@@ -620,6 +620,89 @@ class Tools extends ToolsCommon
         );
     }
 
+
+    /**
+     * Send event Lote to SEFAZ
+     * @param string $uf
+     * @param array $chave
+     * @param int $tpEvento
+     * @param int $nSeqEvento
+     * @param string $tagAdic
+     * @return string
+     */    
+    public function sefazEventoLote(
+        $uf,
+        $chave = [],
+        $tpEvento,
+        $nSeqEvento = 1,
+        $tagAdic = ''
+    ){
+        $ignore = false;
+        if ($tpEvento == 110140) {
+            $ignore = true;
+        }
+        $servico = 'RecepcaoEvento';
+        $this->checkContingencyForWebServices($servico);
+        $this->servico(
+            $servico,
+            $uf,
+            $this->tpAmb,
+            $ignore
+        );
+        $ev = $this->tpEv($tpEvento);
+        $aliasEvento = $ev->alias;
+        $descEvento = $ev->desc;
+        $cnpj = $this->config->cnpj;
+        $dt = new \DateTime();
+        $dhEvento = $dt->format('Y-m-d\TH:i:sP');
+        $sSeqEvento = str_pad($nSeqEvento, 2, "0", STR_PAD_LEFT);
+        $cOrgao = UFList::getCodeByUF($uf);
+
+        $request = "";
+        foreach ($chave as $chv){
+            $eventId = "ID".$tpEvento.$chv.$sSeqEvento;
+            $request .= "<evento xmlns=\"$this->urlPortal\" versao=\"$this->urlVersion\">"
+                . "<infEvento Id=\"$eventId\">"
+                . "<cOrgao>$cOrgao</cOrgao>"
+                . "<tpAmb>$this->tpAmb</tpAmb>"
+                . "<CNPJ>$cnpj</CNPJ>"
+                . "<chNFe>$chv</chNFe>"
+                . "<dhEvento>$dhEvento</dhEvento>"
+                . "<tpEvento>$tpEvento</tpEvento>"
+                . "<nSeqEvento>$nSeqEvento</nSeqEvento>"
+                . "<verEvento>$this->urlVersion</verEvento>"
+                . "<detEvento versao=\"$this->urlVersion\">"
+                . "<descEvento>$descEvento</descEvento>"
+                . "$tagAdic"
+                . "</detEvento>"
+                . "</infEvento>"
+                . "</evento>";
+        }
+
+        //assinatura dos dados
+        $request = Signer::sign(
+            $this->certificate,
+            $request,
+            'infEvento',
+            'Id',
+            $this->algorithm,
+            $this->canonical
+        );
+        $request = Strings::clearXmlString($request, true);
+        $lote = $dt->format('YmdHis').rand(0, 9);
+        $request = "<envEvento xmlns=\"$this->urlPortal\" versao=\"$this->urlVersion\">"
+            . "<idLote>$lote</idLote>"
+            . $request
+            . "</envEvento>";
+        $this->isValid($this->urlVersion, $request, 'envEvento');
+        $this->lastRequest = $request;
+        $parameters = ['nfeDadosMsg' => $request];
+        $body = "<nfeDadosMsg xmlns=\"$this->urlNamespace\">$request</nfeDadosMsg>";
+        $this->lastResponse = $this->sendRequest($body, $parameters);
+        return $this->lastResponse;   
+    }
+
+
     /**
      * Send event to SEFAZ
      * @param string $uf
